@@ -18,43 +18,43 @@ def sl(x):
 		return False
 
 def ste(x):
-    return DIGITS[अङ्क.index(x)]
+	return DIGITS[अङ्क.index(x)]
 
 def ets(x):
-    s = str(x)
-    a = ''
-    if '.' in s:
-        b = s.split('.')
-        for j in b[0]:
-            a += अङ्क[DIGITS.index(j)]
-        a += '.'
-        for k in b[1]:
-            a += अङ्क[DIGITS.index(k)]
-    else:
-        for i in s:
-            a += अङ्क[DIGITS.index(i)]
-    return a
+	s = str(x)
+	a = ''
+	if '.' in s:
+		b = s.split('.')
+		for j in b[0]:
+			a += अङ्क[DIGITS.index(j)]
+		a += '.'
+		for k in b[1]:
+			a += अङ्क[DIGITS.index(k)]
+	else:
+		for i in s:
+			a += अङ्क[DIGITS.index(i)]
+	return a
 
 #######################################
 # ERRORS
 #######################################
 
 class Error:
-    def __init__(self, pos_start, pos_end, error_name, details):
-        self.pos_start = pos_start
-        self.pos_end = pos_end
-        self.error_name = error_name
-        self.details = details
-    
-    def as_string(self):
-        result  = f'{self.error_name}: {self.details}\n'
-        result += f'लेख्य {self.pos_start.fn}, पङ्कति {ets(self.pos_start.ln + 1)}'
-        result += '\n\n' + string_with_arrows(self.pos_start.ftxt, self.pos_start, self.pos_end)
-        return result
+	def __init__(self, pos_start, pos_end, error_name, details):
+		self.pos_start = pos_start
+		self.pos_end = pos_end
+		self.error_name = error_name
+		self.details = details
+	
+	def as_string(self):
+		result  = f'{self.error_name}: {self.details}\n'
+		result += f'लेख्य {self.pos_start.fn}, पङ्कति {ets(self.pos_start.ln + 1)}'
+		result += '\n\n' + string_with_arrows(self.pos_start.ftxt, self.pos_start, self.pos_end)
+		return result
 
 class IllegalCharError(Error):
-    def __init__(self, pos_start, pos_end, details):
-        super().__init__(pos_start, pos_end, 'अवैध अक्षर', details)
+	def __init__(self, pos_start, pos_end, details):
+		super().__init__(pos_start, pos_end, 'अवैध अक्षर', details)
 
 class InvalidSyntaxError(Error):
 	def __init__(self, pos_start, pos_end, details=''):
@@ -88,37 +88,37 @@ class RTError(Error):
 #######################################
 
 class Position:
-    def __init__(self, idx, ln, col, fn, ftxt):
-        self.idx = idx
-        self.ln = ln
-        self.col = col
-        self.fn = fn
-        self.ftxt = ftxt
+	def __init__(self, idx, ln, col, fn, ftxt):
+		self.idx = idx
+		self.ln = ln
+		self.col = col
+		self.fn = fn
+		self.ftxt = ftxt
 
-    def advance(self, current_char):
-        self.idx += 1
-        self.col += 1
+	def advance(self, current_char=None):
+		self.idx += 1
+		self.col += 1
 
-        if current_char == '\n':
-            self.ln += 1
-            self.col = 0
+		if current_char == '\n':
+			self.ln += 1
+			self.col = 0
 
-        return self
+		return self
 
-    def copy(self):
-        return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
+	def copy(self):
+		return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
 
 #######################################
 # TOKENS
 #######################################
 
 TT_INT	= 'पूर्ण'
-TT_FLOAT    = 'अर्ध'
-TT_IDENTIFIER    = 'चल'
-TT_PLUS     = 'अधिक'
-TT_MINUS    = 'ऋण'
-TT_MUL      = 'गुण'
-TT_DIV      = 'भाग'
+TT_FLOAT	= 'अर्ध'
+TT_IDENTIFIER	= 'चल'
+TT_PLUS	 = 'अधिक'
+TT_MINUS	= 'ऋण'
+TT_MUL	  = 'गुण'
+TT_DIV	  = 'भाग'
 TT_POW			= 'मात्रा'
 TT_EQ			= 'सम'
 TT_LPAREN   = 'दावरण'
@@ -126,110 +126,111 @@ TT_RPAREN   = 'वावरण'
 TT_EOF			= 'अन्त'
 
 class Token:
-    def __init__(self, type_, value=None, pos_start=None, pos_end=None):
-        self.type = type_
-        self.value = value
+	def __init__(self, type_, value=None, pos_start=None, pos_end=None):
+		self.type = type_
+		self.value = value
 
-        if pos_start:
-            self.pos_start = pos_start.copy()
-            self.pos_end = pos_start.copy()
-            self.pos_end.advance()
+		if pos_start:
+			self.pos_start = pos_start.copy()
+			self.pos_end = pos_start.copy()
+			self.pos_end.advance()
 
-        if pos_end:
-            self.pos_end = pos_end.copy()
-    
-    def __repr__(self):
-        if self.value: return f'{self.type}:{self.value}'
-        return f'{self.type}'
+		if pos_end:
+			self.pos_end = pos_end.copy()
+	
+	def __repr__(self):
+		if self.value: return f'{self.type}:{self.value}'
+		return f'{self.type}'
 
 #######################################
 # LEXER
 #######################################
 
 class Lexer:
-    def __init__(self, fn, text):
-        self.fn = fn
-        self.text = text
-        self.pos = Position(-1, 0, -1, fn, text)
-        self.current_char = None
-        self.advance()
-    
-    def advance(self):
-        self.pos.advance(self.current_char)
-        self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
+	def __init__(self, fn, text):
+		self.fn = fn
+		self.text = text
+		self.pos = Position(-1, 0, -1, fn, text)
+		self.current_char = None
+		self.advance()
+	
+	def advance(self):
+		self.pos.advance(self.current_char)
+		self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
 
-    def make_tokens(self):
-        tokens = []
+	def make_tokens(self):
+		tokens = []
 
-        while self.current_char != None:
-            if self.current_char in ' \t':
-                self.advance()
-            elif self.current_char in अङ्क:
-                tokens.append(self.make_number())
-            elif sl(self.current_char):
-                tokens.append(self.make_identifier())
-            elif self.current_char == '+':
-                tokens.append(Token(TT_PLUS, pos_start=self.pos))
-                self.advance()
-            elif self.current_char == '-':
-                tokens.append(Token(TT_MINUS, pos_start=self.pos))
-                self.advance()
-            elif self.current_char == '*':
-                tokens.append(Token(TT_MUL, pos_start=self.pos))
-                self.advance()
-            elif self.current_char == '/':
-                tokens.append(Token(TT_DIV, pos_start=self.pos))
-                self.advance()
-            elif self.current_char == '^':
-                tokens.append(Token(TT_POW, pos_start=self.pos))
-                self.advance()
-            elif self.current_char == '=':
-                tokens.append(Token(TT_EQ, pos_start=self.pos))
-                self.advance()
-            elif self.current_char == '(':
-                tokens.append(Token(TT_LPAREN, pos_start=self.pos))
-                self.advance()
-            elif self.current_char == ')':
-                tokens.append(Token(TT_RPAREN, pos_start=self.pos))
-                self.advance()
-            else:
-                pos_start = self.pos.copy()
-                char = self.current_char
-                self.advance()
-                return [], IllegalCharError(pos_start, self.pos, "'" + char + "'")
+		while self.current_char != None:
+			if self.current_char in ' \t':
+				self.advance()
+			elif self.current_char in अङ्क:
+				tokens.append(self.make_number())
+			elif sl(self.current_char):
+				tokens.append(self.make_identifier())
+			elif self.current_char == '+':
+				tokens.append(Token(TT_PLUS, pos_start=self.pos))
+				self.advance()
+			elif self.current_char == '-':
+				tokens.append(Token(TT_MINUS, pos_start=self.pos))
+				self.advance()
+			elif self.current_char == '*':
+				tokens.append(Token(TT_MUL, pos_start=self.pos))
+				self.advance()
+			elif self.current_char == '/':
+				tokens.append(Token(TT_DIV, pos_start=self.pos))
+				self.advance()
+			elif self.current_char == '^':
+				tokens.append(Token(TT_POW, pos_start=self.pos))
+				self.advance()
+			elif self.current_char == '=':
+				tokens.append(Token(TT_EQ, pos_start=self.pos))
+				self.advance()
+			elif self.current_char == '(':
+				tokens.append(Token(TT_LPAREN, pos_start=self.pos))
+				self.advance()
+			elif self.current_char == ')':
+				tokens.append(Token(TT_RPAREN, pos_start=self.pos))
+				self.advance()
+			else:
+				pos_start = self.pos.copy()
+				char = self.current_char
+				self.advance()
+				return [], IllegalCharError(pos_start, self.pos, "'" + char + "'")
 
-        tokens.append(Token(TT_EOF, pos_start=self.pos))
-        return tokens, None
+		tokens.append(Token(TT_EOF, pos_start=self.pos))
+		print(tokens)
+		return tokens, None
 
-    def make_number(self):
-        num_str = ''
-        dot_count = 0
-        pos_start = self.pos.copy()
+	def make_number(self):
+		num_str = ''
+		dot_count = 0
+		pos_start = self.pos.copy()
 
-        while self.current_char != None and self.current_char in अङ्क + '.':
-            if self.current_char == '.':
-                if dot_count == 1: break
-                dot_count += 1
-                num_str += '.'
-            else:
-                num_str += ste(self.current_char)
-            self.advance()
+		while self.current_char != None and self.current_char in अङ्क + '.':
+			if self.current_char == '.':
+				if dot_count == 1: break
+				dot_count += 1
+				num_str += '.'
+			else:
+				num_str += ste(self.current_char)
+			self.advance()
 
-        if dot_count == 0:
-            return Token(TT_INT, int(num_str), pos_start, self.pos)
-        else:
-            return Token(TT_FLOAT, float(num_str), pos_start, self.pos)
+		if dot_count == 0:
+			return Token(TT_INT, int(num_str), pos_start, self.pos)
+		else:
+			return Token(TT_FLOAT, float(num_str), pos_start, self.pos)
 
-    def make_identifier(self):
-        id_str = ''
-        pos_start = self.pos.copy()
+	def make_identifier(self):
+		id_str = ''
+		pos_start = self.pos.copy()
 
-        while self.current_char != None and sl(self.current_char):
-            id_str += self.current_char
-            self.advance()
+		while self.current_char != None and sl(self.current_char):
+			id_str += self.current_char
+			self.advance()
 
-        tok_type = TT_IDENTIFIER
-        return Token(tok_type, id_str, pos_start, self.pos)
+		tok_type = TT_IDENTIFIER
+		return Token(tok_type, id_str, pos_start, self.pos)
 
 #######################################
 # NODES
@@ -642,7 +643,7 @@ class Interpreter:
 #######################################
 
 global_symbol_table = SymbolTable()
-global_symbol_table.set("null", Number(0))
+global_symbol_table.set("ह", Number(0))
 
 def run(fn, text):
 	# Generate tokens
@@ -659,6 +660,7 @@ def run(fn, text):
 	interpreter = Interpreter()
 	context = Context('<program>')
 	context.symbol_table = global_symbol_table
+	print(context.symbol_table.symbols)
 	result = interpreter.visit(ast.node, context)
 
 	return result.value, result.error
